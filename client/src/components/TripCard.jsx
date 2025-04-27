@@ -27,7 +27,7 @@ const TripCard = ({ tripData }) => {
 
         {/* Trip Info - Top Left */}
         <div className="absolute top-4 left-4 text-white">
-          <h3 className="text-4xl font-bold tracking-wide">
+          <h3 className="text-5xl w-9 tracking-widest font-extrabold">
             {tripData.destination}
           </h3>
           <p className="text-sm mt-1 text-gray-200">{tripData.dates}</p>

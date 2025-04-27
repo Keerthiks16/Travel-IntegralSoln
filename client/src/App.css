@@ -8,3 +8,6 @@
   -ms-overflow-style: none; /* IE and Edge */
   scrollbar-width: none; /* Firefox */
 }
+.min-h-screen {
+  padding-bottom: 5rem !important; /* Ensure this overrides any other styles */
+}

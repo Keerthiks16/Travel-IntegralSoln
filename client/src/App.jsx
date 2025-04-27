@@ -1,34 +1,29 @@
 import React from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
-import { ThemeProvider } from "./context/ThemeContext";
-import BottomTabs from "./components/BottomTabs"; // Add this import
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Layout from "./components/Layout";
+import Onboarding from "./pages/Onboarding";
+import Create from "./pages/Create";
+import Favourites from "./pages/Favourites";
+import Profile from "./pages/Profile";
 import Dashboard from "./pages/Dashboard";
-import Onboarding from "./pages/OnBoarding";
+import { ThemeProvider } from "./context/ThemeContext";
 
-const App = () => {
+function App() {
   return (
     <ThemeProvider>
       <Router>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/search" element={<Onboarding />} />
-          {/* Add these new routes to match your tabs */}
-          <Route path="/profile" element={<div>Profile Page</div>} />
-          <Route path="/create" element={<div>Create Page</div>} />
-          <Route path="/favorites" element={<div>Favourites Page</div>} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-
-        {/* Add the BottomTabs component */}
-        <BottomTabs />
+        <Layout>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/search" element={<Onboarding />} />
+            <Route path="/create" element={<Create />} />
+            <Route path="/favorites" element={<Favourites />} />
+            <Route path="/profile" element={<Profile />} />
+          </Routes>
+        </Layout>
       </Router>
     </ThemeProvider>
   );
-};
+}
 
 export default App;
