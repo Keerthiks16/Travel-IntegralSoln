@@ -21,7 +21,8 @@ const Create = () => {
   const [selectedDestination, setSelectedDestination] = useState(null);
   const [travelPlan, setTravelPlan] = useState({
     city: "",
-    dates: "",
+    startDate: "",
+    endDate: "",
     duration: "",
     groupSize: "",
     people: { male: 0, female: 0 },
@@ -30,7 +31,7 @@ const Create = () => {
     activities: [],
   });
 
-  // Handle search input changes
+  // Filter destinations based on search query
   useEffect(() => {
     if (searchQuery.trim() === "") {
       setFilteredDestinations([]);
@@ -42,101 +43,167 @@ const Create = () => {
     }
   }, [searchQuery]);
 
-  // Select a destination from search results
+  // Handle destination selection
   const handleSelectDestination = (destination) => {
     setSelectedDestination(destination);
-    setTravelPlan({
-      ...travelPlan,
+    setTravelPlan((prev) => ({
+      ...prev,
       city: destination.city,
       accommodations: [],
       activities: [],
-    });
-    setSearchQuery(""); // Clear search after selection
+    }));
+    setSearchQuery("");
     setFilteredDestinations([]);
   };
 
-  // Add accommodation to plan
-  const handleAddAccommodation = (accommodation) => {
-    if (
-      !travelPlan.accommodations.some((acc) => acc.name === accommodation.name)
-    ) {
-      setTravelPlan({
-        ...travelPlan,
-        accommodations: [...travelPlan.accommodations, accommodation],
-      });
-    }
-  };
+  // Handle array operations (add/remove items)
+  const handleArrayOperation = (type, operation, item) => {
+    setTravelPlan((prev) => {
+      const array = [...prev[type]];
+      const exists = array.some((i) => i.name === item.name);
 
-  // Remove accommodation from plan
-  const handleRemoveAccommodation = (accommodation) => {
-    setTravelPlan({
-      ...travelPlan,
-      accommodations: travelPlan.accommodations.filter(
-        (acc) => acc.name !== accommodation.name
-      ),
+      if (operation === "add" && !exists) {
+        return { ...prev, [type]: [...array, item] };
+      } else if (operation === "remove") {
+        return { ...prev, [type]: array.filter((i) => i.name !== item.name) };
+      }
+      return prev;
     });
   };
 
-  // Add activity to plan
-  const handleAddActivity = (activity) => {
-    if (!travelPlan.activities.some((act) => act.name === activity.name)) {
-      setTravelPlan({
-        ...travelPlan,
-        activities: [...travelPlan.activities, activity],
-      });
-    }
-  };
-
-  // Remove activity from plan
-  const handleRemoveActivity = (activity) => {
-    setTravelPlan({
-      ...travelPlan,
-      activities: travelPlan.activities.filter(
-        (act) => act.name !== activity.name
-      ),
-    });
-  };
-
-  // Handle input changes for travel plan
+  // Handle input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
     if (name.includes(".")) {
       const [parent, child] = name.split(".");
-      setTravelPlan({
-        ...travelPlan,
-        [parent]: {
-          ...travelPlan[parent],
-          [child]: value,
-        },
-      });
+      setTravelPlan((prev) => ({
+        ...prev,
+        [parent]: { ...prev[parent], [child]: value },
+      }));
     } else {
-      setTravelPlan({
-        ...travelPlan,
-        [name]: value,
-      });
+      setTravelPlan((prev) => ({ ...prev, [name]: value }));
     }
   };
 
   // Handle people count changes
   const handlePeopleChange = (type, value) => {
-    if (value >= 0) {
-      setTravelPlan({
-        ...travelPlan,
-        people: {
-          ...travelPlan.people,
-          [type]: parseInt(value),
-        },
-      });
+    const numValue = parseInt(value) || 0;
+    if (numValue >= 0) {
+      setTravelPlan((prev) => ({
+        ...prev,
+        people: { ...prev.people, [type]: numValue },
+      }));
     }
   };
+
+  // Calculate duration when dates change
+  useEffect(() => {
+    if (travelPlan.startDate && travelPlan.endDate) {
+      const start = new Date(travelPlan.startDate);
+      const end = new Date(travelPlan.endDate);
+      const diffTime = Math.abs(end - start);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      setTravelPlan((prev) => ({ ...prev, duration: `${diffDays} Days` }));
+    }
+  }, [travelPlan.startDate, travelPlan.endDate]);
 
   // Save travel plan
   const handleSavePlan = () => {
     console.log("Saving travel plan:", travelPlan);
-    // Here you'd typically send this data to your backend
     alert("Travel plan saved successfully!");
   };
+
+  // Common input field component
+  const InputField = ({
+    icon: Icon,
+    name,
+    value,
+    placeholder,
+    disabled = false,
+  }) => (
+    <div
+      className={`p-3 rounded-lg flex items-center ${
+        darkMode ? "bg-gray-700" : "bg-gray-200"
+      }`}
+    >
+      <Icon
+        className={`mr-2 ${darkMode ? "text-lime-300" : "text-blue-400"}`}
+        size={16}
+      />
+      <input
+        type="text"
+        name={name}
+        value={value}
+        onChange={handleInputChange}
+        placeholder={placeholder}
+        disabled={disabled}
+        className="bg-transparent outline-none w-full"
+      />
+    </div>
+  );
+
+  // Common section component
+  const Section = ({ title, children }) => (
+    <div
+      className={`rounded-2xl shadow-lg p-6 mb-8 ${
+        darkMode ? "bg-gray-800" : "bg-white"
+      }`}
+    >
+      <h2 className="text-2xl font-bold mb-4">{title}</h2>
+      {children}
+    </div>
+  );
+
+  // Item card component for accommodations and activities
+  const ItemCard = ({ item, type, isSelected }) => (
+    <div
+      className={`p-4 rounded-lg flex justify-between items-center ${
+        darkMode ? "bg-gray-700" : "bg-gray-200"
+      }`}
+    >
+      <div>
+        <div className="flex items-center">
+          {type === "accommodations" ? (
+            <Hotel
+              className={`mr-2 ${darkMode ? "text-lime-300" : "text-blue-400"}`}
+              size={16}
+            />
+          ) : (
+            <Activity
+              className={`mr-2 ${darkMode ? "text-lime-300" : "text-blue-400"}`}
+              size={16}
+            />
+          )}
+          <h3 className="font-bold">{item.name}</h3>
+        </div>
+        <p
+          className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-600"}`}
+        >
+          {type === "accommodations"
+            ? `Rating: ${item.rating}`
+            : `${item.timing} · ${item.duration}`}
+        </p>
+      </div>
+      <button
+        onClick={() =>
+          handleArrayOperation(type, isSelected ? "remove" : "add", item)
+        }
+        className={`p-2 rounded-full ${
+          darkMode ? "hover:bg-gray-600" : "hover:bg-gray-300"
+        }`}
+      >
+        {isSelected ? (
+          <Trash className="text-red-500" size={16} />
+        ) : (
+          <PlusCircle
+            className={darkMode ? "text-lime-300" : "text-blue-400"}
+            size={16}
+          />
+        )}
+      </button>
+    </div>
+  );
 
   return (
     <div
@@ -147,164 +214,140 @@ const Create = () => {
       <h1 className="text-4xl font-extrabold mb-6">Create Your Travel Plan</h1>
 
       {/* Search Destination */}
-      <div className="mb-8">
-        <div className="relative">
-          <div
-            className={`flex items-center p-4 rounded-lg ${
-              darkMode ? "bg-gray-800" : "bg-white"
-            } shadow-md`}
-          >
-            <Search
-              className={`mr-2 ${darkMode ? "text-lime-300" : "text-blue-400"}`}
-              size={20}
-            />
-            <input
-              type="text"
-              placeholder="Search for a destination..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className={`w-full bg-transparent outline-none ${
-                darkMode ? "text-white" : "text-gray-800"
-              }`}
-            />
-          </div>
-
-          {filteredDestinations.length > 0 && (
-            <div
-              className={`absolute left-0 right-0 mt-2 rounded-lg shadow-lg overflow-hidden z-10 ${
-                darkMode ? "bg-gray-800" : "bg-white"
-              }`}
-            >
-              {filteredDestinations.map((dest, index) => (
-                <div
-                  key={index}
-                  className={`p-4 flex items-center cursor-pointer ${
-                    darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
-                  }`}
-                  onClick={() => handleSelectDestination(dest)}
-                >
-                  <MapPin
-                    className={`mr-2 ${
-                      darkMode ? "text-lime-300" : "text-blue-400"
-                    }`}
-                    size={16}
-                  />
-                  <span>{dest.city}</span>
-                </div>
-              ))}
-            </div>
-          )}
+      <div className="mb-8 relative">
+        <div
+          className={`flex items-center p-4 rounded-lg ${
+            darkMode ? "bg-gray-800" : "bg-white"
+          } shadow-md`}
+        >
+          <Search
+            className={`mr-2 ${darkMode ? "text-lime-300" : "text-blue-400"}`}
+            size={20}
+          />
+          <input
+            type="text"
+            placeholder="Search for a destination..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className={`w-full bg-transparent outline-none ${
+              darkMode ? "text-white" : "text-gray-800"
+            }`}
+          />
         </div>
+
+        {filteredDestinations.length > 0 && (
+          <div
+            className={`absolute left-0 right-0 mt-2 rounded-lg shadow-lg overflow-hidden z-10 ${
+              darkMode ? "bg-gray-800" : "bg-white"
+            }`}
+          >
+            {filteredDestinations.map((dest) => (
+              <div
+                key={dest.city}
+                className={`p-4 flex items-center cursor-pointer ${
+                  darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
+                }`}
+                onClick={() => handleSelectDestination(dest)}
+              >
+                <MapPin
+                  className={`mr-2 ${
+                    darkMode ? "text-lime-300" : "text-blue-400"
+                  }`}
+                  size={16}
+                />
+                <span>{dest.city}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Plan Creation Form */}
-      <div
-        className={`rounded-2xl shadow-lg p-6 mb-8 ${
-          darkMode ? "bg-gray-800" : "bg-white"
-        }`}
-      >
-        <h2 className="text-2xl font-bold mb-4">Trip Details</h2>
-
+      {/* Trip Details Section */}
+      <Section title="Trip Details">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Destination */}
           <div>
             <label className="block text-sm mb-2">Destination</label>
-            <div
-              className={`p-3 rounded-lg ${
-                darkMode ? "bg-gray-700" : "bg-gray-200"
-              } flex items-center`}
-            >
-              <MapPin
-                className={`mr-2 ${
-                  darkMode ? "text-lime-300" : "text-blue-400"
-                }`}
-                size={16}
-              />
-              <input
-                type="text"
-                name="city"
-                value={travelPlan.city}
-                onChange={handleInputChange}
-                placeholder="Where to?"
-                className="bg-transparent outline-none w-full"
-                disabled={!!selectedDestination}
-              />
-            </div>
+            <InputField
+              icon={MapPin}
+              name="city"
+              value={travelPlan.city}
+              placeholder="Where to?"
+              disabled={!!selectedDestination}
+            />
           </div>
 
           {/* Dates */}
           <div>
             <label className="block text-sm mb-2">Dates</label>
-            <div
-              className={`p-3 rounded-lg ${
-                darkMode ? "bg-gray-700" : "bg-gray-200"
-              } flex items-center`}
-            >
-              <CalendarDays
-                className={`mr-2 ${
-                  darkMode ? "text-lime-300" : "text-blue-400"
-                }`}
-                size={16}
-              />
-              <input
-                type="text"
-                name="dates"
-                value={travelPlan.dates}
-                onChange={handleInputChange}
-                placeholder="DD.MM.YYYY - DD.MM.YYYY"
-                className="bg-transparent outline-none w-full"
-              />
+            <div>
+              <div className="flex-1">
+                <div
+                  className={`p-3 mb-2 rounded-lg flex items-center ${
+                    darkMode ? "bg-gray-700" : "bg-gray-200"
+                  }`}
+                >
+                  <CalendarDays
+                    className={`mr-2 ${
+                      darkMode ? "text-lime-300" : "text-blue-400"
+                    }`}
+                    size={16}
+                  />
+                  <input
+                    type="date"
+                    name="startDate"
+                    value={travelPlan.startDate}
+                    onChange={handleInputChange}
+                    className="bg-transparent outline-none w-full"
+                  />
+                </div>
+              </div>
+              <div className="flex-1">
+                <div
+                  className={`p-3 rounded-lg flex items-center ${
+                    darkMode ? "bg-gray-700" : "bg-gray-200"
+                  }`}
+                >
+                  <CalendarDays
+                    className={`mr-2 ${
+                      darkMode ? "text-lime-300" : "text-blue-400"
+                    }`}
+                    size={16}
+                  />
+                  <input
+                    type="date"
+                    name="endDate"
+                    value={travelPlan.endDate}
+                    onChange={handleInputChange}
+                    min={travelPlan.startDate}
+                    className="bg-transparent outline-none w-full"
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Duration */}
           <div>
             <label className="block text-sm mb-2">Duration</label>
-            <div
-              className={`p-3 rounded-lg ${
-                darkMode ? "bg-gray-700" : "bg-gray-200"
-              } flex items-center`}
-            >
-              <CalendarDays
-                className={`mr-2 ${
-                  darkMode ? "text-lime-300" : "text-blue-400"
-                }`}
-                size={16}
-              />
-              <input
-                type="text"
-                name="duration"
-                value={travelPlan.duration}
-                onChange={handleInputChange}
-                placeholder="7 Days"
-                className="bg-transparent outline-none w-full"
-              />
-            </div>
+            <InputField
+              icon={CalendarDays}
+              name="duration"
+              value={travelPlan.duration}
+              placeholder="No of Days"
+              disabled
+            />
           </div>
 
           {/* Group Size */}
           <div>
             <label className="block text-sm mb-2">Group Size</label>
-            <div
-              className={`p-3 rounded-lg ${
-                darkMode ? "bg-gray-700" : "bg-gray-200"
-              } flex items-center`}
-            >
-              <Users
-                className={`mr-2 ${
-                  darkMode ? "text-lime-300" : "text-blue-400"
-                }`}
-                size={16}
-              />
-              <input
-                type="text"
-                name="groupSize"
-                value={travelPlan.groupSize}
-                onChange={handleInputChange}
-                placeholder="Solo, Couple, Family, Friends"
-                className="bg-transparent outline-none w-full"
-              />
-            </div>
+            <InputField
+              icon={Users}
+              name="groupSize"
+              value={travelPlan.groupSize}
+              placeholder="Solo, Couple, Family, Friends"
+            />
           </div>
 
           {/* People */}
@@ -313,15 +356,15 @@ const Create = () => {
             <div
               className={`p-3 rounded-lg ${
                 darkMode ? "bg-gray-700" : "bg-gray-200"
-              } flex items-center`}
+              } flex items-center gap-4`}
             >
-              <div className="flex items-center mr-4">
+              <div className="flex items-center">
                 <span className="mr-2">Male:</span>
                 <input
                   type="number"
                   value={travelPlan.people.male}
                   onChange={(e) => handlePeopleChange("male", e.target.value)}
-                  className={`w-16 p-1 rounded ${
+                  className={`w-12 p-1 rounded ${
                     darkMode ? "bg-gray-600" : "bg-gray-100"
                   } text-center`}
                   min="0"
@@ -333,7 +376,7 @@ const Create = () => {
                   type="number"
                   value={travelPlan.people.female}
                   onChange={(e) => handlePeopleChange("female", e.target.value)}
-                  className={`w-16 p-1 rounded ${
+                  className={`w-12 p-1 rounded ${
                     darkMode ? "bg-gray-600" : "bg-gray-100"
                   } text-center`}
                   min="0"
@@ -379,71 +422,21 @@ const Create = () => {
             </div>
           </div>
         </div>
-      </div>
+      </Section>
 
-      {/* Accommodations */}
+      {/* Accommodations Section */}
       {selectedDestination && (
-        <div
-          className={`rounded-2xl shadow-lg p-6 mb-8 ${
-            darkMode ? "bg-gray-800" : "bg-white"
-          }`}
-        >
-          <h2 className="text-2xl font-bold mb-4">Suggested Accommodations</h2>
-
+        <Section title="Suggested Accommodations">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {selectedDestination.accommodations.map((accommodation, index) => (
-              <div
-                key={index}
-                className={`p-4 rounded-lg ${
-                  darkMode ? "bg-gray-700" : "bg-gray-200"
-                } flex justify-between items-center`}
-              >
-                <div>
-                  <div className="flex items-center">
-                    <Hotel
-                      className={`mr-2 ${
-                        darkMode ? "text-lime-300" : "text-blue-400"
-                      }`}
-                      size={16}
-                    />
-                    <h3 className="font-bold">{accommodation.name}</h3>
-                  </div>
-                  <p
-                    className={`text-xs ${
-                      darkMode ? "text-gray-400" : "text-gray-600"
-                    }`}
-                  >
-                    Rating: {accommodation.rating}
-                  </p>
-                </div>
-
-                {travelPlan.accommodations.some(
+            {selectedDestination.accommodations.map((accommodation) => (
+              <ItemCard
+                key={accommodation.name}
+                item={accommodation}
+                type="accommodations"
+                isSelected={travelPlan.accommodations.some(
                   (acc) => acc.name === accommodation.name
-                ) ? (
-                  <button
-                    onClick={() => handleRemoveAccommodation(accommodation)}
-                    className={`p-2 rounded-full ${
-                      darkMode ? "hover:bg-gray-600" : "hover:bg-gray-300"
-                    }`}
-                  >
-                    <Trash className="text-red-500" size={16} />
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => handleAddAccommodation(accommodation)}
-                    className={`p-2 rounded-full ${
-                      darkMode ? "hover:bg-gray-600" : "hover:bg-gray-300"
-                    }`}
-                  >
-                    <PlusCircle
-                      className={`${
-                        darkMode ? "text-lime-300" : "text-blue-400"
-                      }`}
-                      size={16}
-                    />
-                  </button>
                 )}
-              </div>
+              />
             ))}
           </div>
 
@@ -453,16 +446,18 @@ const Create = () => {
                 Selected Accommodations:
               </h3>
               <div className="space-y-2">
-                {travelPlan.accommodations.map((acc, idx) => (
+                {travelPlan.accommodations.map((acc) => (
                   <div
-                    key={idx}
+                    key={acc.name}
                     className={`p-3 rounded-lg ${
                       darkMode ? "bg-gray-700" : "bg-gray-200"
                     } flex justify-between items-center`}
                   >
                     <span>{acc.name}</span>
                     <button
-                      onClick={() => handleRemoveAccommodation(acc)}
+                      onClick={() =>
+                        handleArrayOperation("accommodations", "remove", acc)
+                      }
                       className={`p-1 rounded-full ${
                         darkMode ? "hover:bg-gray-600" : "hover:bg-gray-300"
                       }`}
@@ -474,72 +469,22 @@ const Create = () => {
               </div>
             </div>
           )}
-        </div>
+        </Section>
       )}
 
-      {/* Activities */}
+      {/* Activities Section */}
       {selectedDestination && (
-        <div
-          className={`rounded-2xl shadow-lg p-6 mb-8 ${
-            darkMode ? "bg-gray-800" : "bg-white"
-          }`}
-        >
-          <h2 className="text-2xl font-bold mb-4">Suggested Activities</h2>
-
+        <Section title="Suggested Activities">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {selectedDestination.activities.map((activity, index) => (
-              <div
-                key={index}
-                className={`p-4 rounded-lg ${
-                  darkMode ? "bg-gray-700" : "bg-gray-200"
-                } flex justify-between items-center`}
-              >
-                <div>
-                  <div className="flex items-center">
-                    <Activity
-                      className={`mr-2 ${
-                        darkMode ? "text-lime-300" : "text-blue-400"
-                      }`}
-                      size={16}
-                    />
-                    <h3 className="font-bold">{activity.name}</h3>
-                  </div>
-                  <p
-                    className={`text-xs ${
-                      darkMode ? "text-gray-400" : "text-gray-600"
-                    }`}
-                  >
-                    {activity.timing} · {activity.duration}
-                  </p>
-                </div>
-
-                {travelPlan.activities.some(
+            {selectedDestination.activities.map((activity) => (
+              <ItemCard
+                key={activity.name}
+                item={activity}
+                type="activities"
+                isSelected={travelPlan.activities.some(
                   (act) => act.name === activity.name
-                ) ? (
-                  <button
-                    onClick={() => handleRemoveActivity(activity)}
-                    className={`p-2 rounded-full ${
-                      darkMode ? "hover:bg-gray-600" : "hover:bg-gray-300"
-                    }`}
-                  >
-                    <Trash className="text-red-500" size={16} />
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => handleAddActivity(activity)}
-                    className={`p-2 rounded-full ${
-                      darkMode ? "hover:bg-gray-600" : "hover:bg-gray-300"
-                    }`}
-                  >
-                    <PlusCircle
-                      className={`${
-                        darkMode ? "text-lime-300" : "text-blue-400"
-                      }`}
-                      size={16}
-                    />
-                  </button>
                 )}
-              </div>
+              />
             ))}
           </div>
 
@@ -549,16 +494,18 @@ const Create = () => {
                 Selected Activities:
               </h3>
               <div className="space-y-2">
-                {travelPlan.activities.map((act, idx) => (
+                {travelPlan.activities.map((act) => (
                   <div
-                    key={idx}
+                    key={act.name}
                     className={`p-3 rounded-lg ${
                       darkMode ? "bg-gray-700" : "bg-gray-200"
                     } flex justify-between items-center`}
                   >
                     <span>{act.name}</span>
                     <button
-                      onClick={() => handleRemoveActivity(act)}
+                      onClick={() =>
+                        handleArrayOperation("activities", "remove", act)
+                      }
                       className={`p-1 rounded-full ${
                         darkMode ? "hover:bg-gray-600" : "hover:bg-gray-300"
                       }`}
@@ -570,7 +517,7 @@ const Create = () => {
               </div>
             </div>
           )}
-        </div>
+        </Section>
       )}
 
       {/* Save Button */}

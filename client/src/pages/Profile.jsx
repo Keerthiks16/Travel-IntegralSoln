@@ -1,11 +1,10 @@
 import React, { useContext, useState } from "react";
 import { ThemeContext } from "../context/ThemeContext";
-import { Dialog } from "@headlessui/react"; // install if not installed: npm install @headlessui/react
+import { Dialog } from "@headlessui/react";
 
 const Profile = () => {
   const { darkMode } = useContext(ThemeContext);
 
-  // Store profile info in a state
   const [profile, setProfile] = useState({
     name: "John Doe",
     title: "Travel Enthusiast 🌍",
@@ -21,8 +20,8 @@ const Profile = () => {
     nextTrip: "Switzerland 🇨🇭",
   });
 
-  const [isOpen, setIsOpen] = useState(false); // Popup visibility
-  const [editProfile, setEditProfile] = useState(profile); // Temporary state for editing
+  const [isOpen, setIsOpen] = useState(false);
+  const [editProfile, setEditProfile] = useState(profile);
 
   const openModal = () => {
     setEditProfile(profile);
@@ -46,6 +45,7 @@ const Profile = () => {
         darkMode ? "bg-black text-white" : "bg-gray-100 text-gray-800"
       }`}
     >
+      {/* Main Profile Card */}
       <div
         className={`max-w-4xl mx-auto rounded-2xl overflow-hidden shadow-md ${
           darkMode ? "bg-gray-800" : "bg-white"
@@ -145,12 +145,12 @@ const Profile = () => {
         </div>
       </div>
 
-      {/* Modal for Editing */}
+      {/* Edit Profile Modal */}
       <Dialog open={isOpen} onClose={closeModal} className="relative z-50">
         <div className="fixed inset-0 bg-black/40" aria-hidden="true" />
         <div className="fixed inset-0 flex items-center justify-center p-4">
           <Dialog.Panel
-            className={`w-full max-w-md rounded-2xl p-6 ${
+            className={`w-full max-w-md rounded-2xl p-6 max-h-[80vh] flex flex-col ${
               darkMode ? "bg-gray-800 text-white" : "bg-white text-gray-800"
             }`}
           >
@@ -158,7 +158,7 @@ const Profile = () => {
               Edit Profile
             </Dialog.Title>
 
-            <div className="space-y-3 text-sm">
+            <div className="overflow-y-auto pr-2 space-y-3 text-sm flex-grow">
               {[
                 { label: "Name", name: "name" },
                 { label: "Title", name: "title" },
@@ -169,33 +169,49 @@ const Profile = () => {
                 { label: "Preferred Airport", name: "airport" },
                 { label: "Favorite Style", name: "style" },
                 { label: "Languages", name: "languages" },
-                { label: "Trips Completed", name: "trips" },
-                { label: "Countries Visited", name: "countries" },
+                { label: "Trips Completed", name: "trips", type: "number" },
+                {
+                  label: "Countries Visited",
+                  name: "countries",
+                  type: "number",
+                },
                 { label: "Next Trip", name: "nextTrip" },
               ].map((field) => (
-                <div key={field.name} className="flex flex-col">
-                  <label className="font-medium">{field.label}</label>
+                <div key={field.name} className="flex flex-col mb-3">
+                  <label className="font-medium mb-1">{field.label}</label>
                   <input
-                    type="text"
+                    type={field.type || "text"}
                     name={field.name}
                     value={editProfile[field.name]}
                     onChange={handleChange}
-                    className="p-2 rounded-md border border-gray-300 mt-1 text-black"
+                    className={`p-2 rounded-md border ${
+                      darkMode
+                        ? "bg-gray-700 border-gray-600"
+                        : "border-gray-300 text-black"
+                    }`}
                   />
                 </div>
               ))}
             </div>
 
-            <div className="flex justify-end gap-4 mt-6">
+            <div className="flex justify-end gap-4 pt-4 mt-4 border-t border-gray-300">
               <button
                 onClick={closeModal}
-                className="px-4 py-2 rounded-md bg-gray-400 hover:bg-gray-500 text-white"
+                className={`px-4 py-2 rounded-md ${
+                  darkMode
+                    ? "bg-gray-600 hover:bg-gray-500"
+                    : "bg-gray-400 hover:bg-gray-500"
+                } text-white`}
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirm}
-                className="px-4 py-2 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white"
+                className={`px-4 py-2 rounded-md ${
+                  darkMode
+                    ? "bg-indigo-700 hover:bg-indigo-600"
+                    : "bg-indigo-600 hover:bg-indigo-700"
+                } text-white`}
               >
                 Confirm
               </button>

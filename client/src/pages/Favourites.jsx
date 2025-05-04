@@ -93,15 +93,6 @@ const Favourites = () => {
                             Rating: {hotel.rating}
                           </p>
                         </div>
-                        <div
-                          className={`text-xs font-bold ${
-                            hotel.status === "Confirmed"
-                              ? "text-green-400"
-                              : "text-yellow-400"
-                          }`}
-                        >
-                          {hotel.status}
-                        </div>
                       </div>
                       <p
                         className={`text-sm mt-2 ${
